@@ -47,7 +47,9 @@ kfold_splits <- vfold_cv(train, v = 5)
 ```
 ## Create Recipe
 ```
-boston_recipe <- recipe(av_total ~ land_sf + living_area + yr_built + num_floors + r_ovrall_cnd + r_int_cnd + r_fplace + median_income + r_ext_cnd + r_ext_fin + r_bldg_styl + r_full_bth + r_half_bth + r_bth_style + r_kitch_style + population + pop_density, data = train) %>%
+boston_recipe <- recipe(av_total ~ land_sf + living_area + yr_built + num_floors + r_ovrall_cnd + r_int_cnd + r_fplace +
+                        median_income + r_ext_cnd + r_ext_fin + r_bldg_styl + r_full_bth + r_half_bth + r_bth_style + 
+                        r_kitch_style + population + pop_density, data = train) %>%
   step_mutate(home_age = 2022 - yr_built) %>% 
   step_rm(yr_built) %>%
   step_impute_median(all_numeric_predictors()) %>%
