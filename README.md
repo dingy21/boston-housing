@@ -247,8 +247,8 @@ bind_cols(
   metrics(av_total, .pred)
 ```
 ## Best & Worst Predictions
+### Best Estimate
 ```
---- best estimate ---
 bind_cols(predict(xgb_workflow, test), test) %>%
   mutate(error = av_total - .pred,
          abs_error = abs(error)) %>%
@@ -257,15 +257,17 @@ best_estimate
 
 best_estimate %>%
   summarize(mean(error), mean(av_total), mean(yr_built))
-
---- worst over-estimate ---
+```
+### Worst Over Estimate
+```
 bind_cols(predict(xgb_workflow, test), test) %>%
   mutate(error = av_total - .pred,
          abs_error = abs(error)) %>%
   slice_min(order_by = error, n = 10) -> over_estimate
 over_estimate
-
---- overly simplistic evaluation ---
+```
+### Overly Simplistic Evaluation
+```
 over_estimate %>%
   summarize(mean(error), mean(av_total), mean(yr_built))
 ```
