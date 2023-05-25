@@ -131,14 +131,14 @@ rf_grid_search %>%
   theme(legend.position = "none") +
   labs(title = "Random Forest Number of Trees")
 
-* Final Fit *
+--- Final Fit ---
 lowest_rf_rmse <- rf_grid_search %>%
   select_best("rmse")
 
 rf_final <- finalize_workflow(rf_workflow, lowest_rf_rmse) %>%
   fit(train)
 
-* Evaluation *
+--- Evaluation ---
 rf_final %>%
   pull_workflow_fit() %>%
   vip() + labs(title = "Random Forest Importance")
@@ -154,4 +154,112 @@ bind_cols(
 bind_cols(
   predict(rf_final, test), test) %>% 
   metrics(av_total, .pred)
+```
+### XGBoost
+```
+xgb_model <- boost_tree(trees = tune(), 
+                        learn_rate = tune(),
+                        tree_depth = tune()) %>%
+  set_engine("xgboost", importance = "permutation") %>%
+  set_mode("regression")
+
+xgb_workflow <- workflow() %>%
+  add_recipe(boston_recipe) %>%
+  add_model(xgb_model)
+
+xgb_search_res <- xgb_workflow %>%
+  tune_bayes(resamples = kfold_splits, initial = 5, iter = 50,
+             metrics = metric_set(rmse, rsq),
+             control = control_bayes(no_improve = 5, verbose = TRUE))
+```
+### XGBoost Tuning
+```
+--- Experiment ---
+xgb_search_res %>%
+  collect_metrics() %>% 
+  filter(.metric == "rmse")
+
+--- Graph of learning rate ---
+xgb_search_res %>%
+  collect_metrics() %>%
+  ggplot(aes(learn_rate, mean, color = .metric)) +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err), alpha = 0.5) +
+  geom_line(size = 1.5) +
+  facet_wrap(~.metric, scales = "free", nrow = 2) +
+  scale_x_log10() +
+  theme(legend.position = "none") +
+  labs(title = "XGBoost Learning Rate")
+
+--- Graph of tree depth ---
+xgb_search_res %>%
+  collect_metrics() %>%
+  ggplot(aes(tree_depth, mean, color = .metric)) +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err), alpha = 0.5) +
+  geom_line(size = 1.5) +
+  facet_wrap(~.metric, scales = "free", nrow = 2) +
+  scale_x_log10() +
+  theme(legend.position = "none") +
+  labs(title = "XGBoost Tree Depth")
+
+--- Graph of number of trees ---
+xgb_search_res %>%
+  collect_metrics() %>%
+  ggplot(aes(trees, mean, color = .metric)) +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err), alpha = 0.5) +
+  geom_line(size = 1.5) +
+  facet_wrap(~.metric, scales = "free", nrow = 2) +
+  scale_x_log10() +
+  theme(legend.position = "none") +
+  labs(title = "XGBoost Number of Trees")
+```
+### Final Fit for XGBoost
+```
+lowest_xgb_rmse <- xgb_search_res %>%
+  select_best("rmse")
+lowest_xgb_rmse
+
+xgb_workflow <- finalize_workflow(xgb_workflow, lowest_xgb_rmse) %>%
+  fit(train)
+
+--- vip ---
+xgb_workflow %>%
+  extract_fit_parsnip() %>%
+  vi()
+
+xgb_workflow %>%
+  extract_fit_parsnip() %>%
+  vip() + labs(title = "XGBoost Importance")
+```
+### Evaluation for XGBoost
+```
+bind_cols(
+  predict(xgb_workflow, train), train) %>% 
+  metrics(av_total, .pred)
+
+bind_cols(
+  predict(xgb_workflow, test), test) %>% 
+  metrics(av_total, .pred)
+```
+## Best & Worst Predictions
+```
+--- best estimate ---
+bind_cols(predict(xgb_workflow, test), test) %>%
+  mutate(error = av_total - .pred,
+         abs_error = abs(error)) %>%
+  slice_min(order_by = abs_error, n = 10) -> best_estimate 
+best_estimate
+
+best_estimate %>%
+  summarize(mean(error), mean(av_total), mean(yr_built))
+
+--- worst over-estimate ---
+bind_cols(predict(xgb_workflow, test), test) %>%
+  mutate(error = av_total - .pred,
+         abs_error = abs(error)) %>%
+  slice_min(order_by = error, n = 10) -> over_estimate
+over_estimate
+
+--- overly simplistic evaluation ---
+over_estimate %>%
+  summarize(mean(error), mean(av_total), mean(yr_built))
 ```
