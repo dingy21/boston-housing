@@ -173,13 +173,14 @@ xgb_search_res <- xgb_workflow %>%
              control = control_bayes(no_improve = 5, verbose = TRUE))
 ```
 ### XGBoost Tuning
+#### Experiment
 ```
---- Experiment ---
 xgb_search_res %>%
   collect_metrics() %>% 
   filter(.metric == "rmse")
-
---- Graph of learning rate ---
+```
+#### Graph of Learning Rate
+```
 xgb_search_res %>%
   collect_metrics() %>%
   ggplot(aes(learn_rate, mean, color = .metric)) +
@@ -189,8 +190,10 @@ xgb_search_res %>%
   scale_x_log10() +
   theme(legend.position = "none") +
   labs(title = "XGBoost Learning Rate")
-
---- Graph of tree depth ---
+```
+![Picture4](https://github.com/dingy21/boston-housing/assets/134649288/4df2ce94-e339-4daa-963f-0898db637703)
+#### Graph of Tree Depth
+```
 xgb_search_res %>%
   collect_metrics() %>%
   ggplot(aes(tree_depth, mean, color = .metric)) +
@@ -200,8 +203,10 @@ xgb_search_res %>%
   scale_x_log10() +
   theme(legend.position = "none") +
   labs(title = "XGBoost Tree Depth")
-
---- Graph of number of trees ---
+```
+![Picture5](https://github.com/dingy21/boston-housing/assets/134649288/78629711-63cf-4575-9349-e8627770b543)
+#### Graph of Number of Trees
+```
 xgb_search_res %>%
   collect_metrics() %>%
   ggplot(aes(trees, mean, color = .metric)) +
@@ -212,6 +217,7 @@ xgb_search_res %>%
   theme(legend.position = "none") +
   labs(title = "XGBoost Number of Trees")
 ```
+![Picture6](https://github.com/dingy21/boston-housing/assets/134649288/0bd442b3-3919-4142-a394-5a7b815d6a86)
 ### Final Fit for XGBoost
 ```
 lowest_xgb_rmse <- xgb_search_res %>%
